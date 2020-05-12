@@ -4,17 +4,30 @@ module  FTL
 		real, dimension(:), allocatable :: list
 		contains
 			procedure, pass(this) :: append => append_definition
+			procedure, pass(this) :: print => print_definition
 	end type queue
+
+	
 	contains
-		subroutine append_definition(this, data)
+		subroutine append_definition(this, item)
 			class(queue) :: this
 			real, allocatable, dimension(:) :: new
-			real :: data
-			allocate(new(size(this%list) + 1))
-			new(1:size(this%list)) = this%list(1:size(this%list))
+			real :: item
+			if (.not. allocated(this%list)) then
+				allocate(this%list(0))
+			end if
+			allocate(new(size(this%list)+1))
+			new(1:size(this%list)) = this%list
+			new(size(this%list)+1) = item
+			deallocate(this%list)
+			allocate(this%list(size(new)))
 			this%list = new
-			this%list(size(this%list)+1) = data
 		end subroutine append_definition
+
+		subroutine print_definition(this)
+			class(queue) :: this
+			print *, this%list
+		end subroutine print_definition
 end module FTL
 
 
@@ -75,6 +88,10 @@ program main
 	implicit none
 	type(queue) :: q
 	call q%append(3.0)
+	call q%append(4.0)
+	! call q%append(3.0)
+	call q%print()
+	! call q%print
 	! type(Block) :: A, B, C
 	! A = construct(30.0)
 	! B = construct(40.0)
