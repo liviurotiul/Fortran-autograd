@@ -1,3 +1,26 @@
+module Autograd
+	implicit none
+	type, public :: Block
+		real :: data, grad
+		contains
+			procedure, pass(this) :: add => addition_definition
+	end type Block
+	contains
+		function construct(variable) result(output)
+			type(Block) :: output
+			real :: variable
+			output%data = variable
+			output%grad = 0
+		end function construct
+
+		function addition_definition(this, other) result(output)
+			class(Block), intent(in) :: this, other
+			type(Block) :: output
+			output = construct(this%data + other%data)
+		end function addition_definition
+
+end module Autograd
+
 module  FTL
 	implicit none
 	type, public :: queue
@@ -7,7 +30,7 @@ module  FTL
 			procedure, pass(this) :: print => print_definition
 	end type queue
 
-	
+
 	contains
 		subroutine append_definition(this, item)
 			class(queue) :: this
@@ -43,12 +66,6 @@ end module FTL
 ! 			procedure, pass(this) :: add => addition_definition
 ! 	end type Block
 
-! 	abstract interface
-! 		subroutine generic_back_subr(this_ptr, other_ptr)
-! 			class(Block), pointer :: this_ptr, other_ptr
-! 		end subroutine
-! 	end interface
-	
 
 ! 	contains
 
@@ -67,16 +84,9 @@ end module FTL
 ! 		end subroutine constructor_definition
 
 ! 		function addition_definition(this, other) result(output)
-! 			type(Block), intent(in) :: this
+! 			class(Block), intent(in) :: this
 ! 			type(Block) :: output, other
 ! 			output = construct(this%data + other%data)
-! 			! contains
-! 			! 	subroutine backward_()
-! 			! 		this%grad = this%grad + output%grad
-! 			! 		other%grad = other%grad + output%grad
-! 			! 	end subroutine
-! 			! output%backward_ => backward_
-
 ! 		end function addition_definition
 
 ! end module Autograd
@@ -85,11 +95,12 @@ end module FTL
 
 program main
 	use FTL
+	use Autograd
 	implicit none
 	type(queue) :: q
+	type(Block) :: a
 	call q%append(3.0)
 	call q%append(4.0)
-	! call q%append(3.0)
 	call q%print()
 	! call q%print
 	! type(Block) :: A, B, C
