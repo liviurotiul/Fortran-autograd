@@ -6,23 +6,29 @@ module Autograd
 			procedure, pass(this) :: add => addition_definition
 	end type Block
 	contains
-		function construct(variable) result(output)
+		function construct_block(variable) result(output)
 			type(Block) :: output
 			real :: variable
 			output%data = variable
 			output%grad = 0
-		end function construct
+		end function construct_block
 
 		function addition_definition(this, other) result(output)
 			class(Block), intent(in) :: this, other
 			type(Block) :: output
-			output = construct(this%data + other%data)
+			output = construct_block(this%data + other%data)
 		end function addition_definition
 
 end module Autograd
 
 module  FTL
+	use Autograd
 	implicit none
+	type, public :: reference
+		type(Block), pointer :: this_ptr, other_ptr
+		character(len = 20) :: operation
+	end type reference
+
 	type, public :: queue
 		real, dimension(:), allocatable :: list
 		contains
@@ -32,6 +38,15 @@ module  FTL
 
 
 	contains
+		function construct_reference(this_ptr, other_ptr, operation) result(output)
+			type(reference) :: output
+			type(Block), pointer :: this_ptr, other_ptr
+			character(len = 20) :: operation
+			output%this_ptr = this_ptr
+			output%other_ptr = other_ptr
+			output%operation = operation
+		end function
+
 		subroutine append_definition(this, item)
 			class(queue) :: this
 			real, allocatable, dimension(:) :: new
