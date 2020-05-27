@@ -27,7 +27,7 @@ module  FTL !we need a queue for the differentiation grpah
 	! the Q contains references to objects taking part in certain operations
 	type, public :: reference
 		type(Block), pointer :: this_ptr, other_ptr
-		character(len = 20) :: operation
+		character(len=3), allocatable :: operation
 	end type reference
 
 	type, public :: queue
@@ -39,33 +39,48 @@ module  FTL !we need a queue for the differentiation grpah
 
 
 	contains
-		function construct_reference(this_ptr, other_ptr, operation) result(output)
+		function construct_reference(this, other, operation) result(output)
 			type(reference) :: output
+			type(Block), target :: this, other
 			type(Block), pointer :: this_ptr, other_ptr
-			character(len = 20) :: operation
+			character(len = 3) :: operation
+			allocate(this_ptr)
+			allocate(other_ptr)
+			this_ptr=>this
+			other_ptr=>other
 			output%this_ptr = this_ptr
 			output%other_ptr = other_ptr
 			output%operation = operation
 		end function
 
-		subroutine append_definition(this, item)
+		subroutine append_definition(this, first, second, operation)
 			class(queue) :: this
-			type(reference), allocatable, dimension(:) :: new
+			type(reference), allocatable, dimension(:) :: queue_cpy
 			type(reference) :: item
-			if (.not. allocated(this%list)) then
+			type(Block) :: first, second
+			character(len = 3) :: operation
+			print *, "debug"
+			item =  construct_reference(first, second, operation) ! THE PROBLEM IS HERE!!!
+			print *, "debug"
+			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0))
 			end if
-			allocate(new(size(this%list)+1))
-			new(1:size(this%list)) = this%list
-			new(size(this%list)+1) = item
-			deallocate(this%list)
-			allocate(this%list(size(new)))
-			this%list = new
+			print *, "debug"
+			allocate(queue_cpy(size(this%list)+1)) ! we allocate a copy that's larger with 1 element and copy the contents of the origina queue 
+			queue_cpy(1:size(this%list)) = this%list
+			queue_cpy(size(this%list)+1) = item
+
+			deallocate(this%list) ! deallocate the original queue
+			allocate(this%list(size(queue_cpy))) ! realloacate 
+			this%list = queue_cpy
+			this%list(size(this%list)) = item
 		end subroutine append_definition
 
 		subroutine print_definition(this)
 			class(queue) :: this
-			print *, "this%list"
+			real :: n
+			n = size(this%list)
+			print *, n
 		end subroutine print_definition
 end module FTL
 
@@ -73,6 +88,16 @@ program main
 	use FTL
 	use Autograd
 	implicit none
+	type(Block) :: a, b, c
+	type(queue) :: graf
+	print *, "debug"
+	a = construct_block(3.0)
+	b = construct_block(4.0)
+	call graf%append(a, b, 'add')
+	! call graf%append(a, b, 'add')
+	! call graf%append(a, b, 'add')
+
+	! call graf%print()
 	! type(queue) :: q
 	! type(Block) :: a
 	! call q%append(3.0)
