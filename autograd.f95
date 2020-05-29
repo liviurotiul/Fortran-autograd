@@ -1,4 +1,4 @@
-module Autograd
+module Block_mod
 	implicit none
 	type, public :: Block
 		real :: data, grad
@@ -19,25 +19,18 @@ module Autograd
 			output = construct_block(this%data + other%data)
 		end function addition_definition
 
-end module Autograd
+end module Block_mod
 
-module  FTL !we need a queue for the differentiation grpah
-	use Autograd
+
+
+module reference_mod
+	use Block_mod
 	implicit none
 	! the Q contains references to objects taking part in certain operations
 	type, public :: reference
 		type(Block), pointer :: this_ptr, other_ptr
-		character(len=3), allocatable :: operation
+		character(len=3) :: operation
 	end type reference
-
-	type, public :: queue
-		type(reference), dimension(:), allocatable :: list
-		contains
-			procedure, pass(this) :: append => append_definition
-			procedure, pass(this) :: print => print_definition
-	end type queue
-
-
 	contains
 		function construct_reference(this, other, operation) result(output)
 			type(reference) :: output
@@ -55,12 +48,31 @@ module  FTL !we need a queue for the differentiation grpah
 			output%operation = operation
 		end function
 
+end module reference_mod
+
+
+
+module  FTL !we need a queue for the differentiation grpah
+	use reference_mod
+	implicit none
+
+	type, public :: queue
+		type(reference), dimension(:), allocatable :: list
+		contains
+			procedure, pass(this) :: append => append_definition
+			procedure, pass(this) :: print => print_definition
+	end type queue
+
+
+	contains
 		subroutine append_definition(this, first, second, operation)
 			class(queue) :: this
 			type(reference), dimension(:), allocatable :: queue_cpy
 			type(reference) :: item
 			type(Block) :: first, second
-			character(len = 3) :: operation
+			character(len=3) :: operation
+
+
 			print *, "debug"
 			item = construct_reference(first, second, operation) 
 			print *, "debug"
@@ -87,12 +99,20 @@ module  FTL !we need a queue for the differentiation grpah
 		end subroutine print_definition
 end module FTL
 
+
+
 program main
 	use FTL
-	use Autograd
+	use Block_mod
 	implicit none
 	type(Block) :: a, b, c
 	type(queue) :: graf
+	!apparently problem is that i m using the reference type for array elements
+
+
+
+
+
 	print *, "debug"
 	a = construct_block(3.0)
 	b = construct_block(4.0)
