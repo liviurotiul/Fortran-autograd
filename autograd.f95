@@ -43,9 +43,11 @@ module  FTL !we need a queue for the differentiation grpah
 			type(reference) :: output
 			type(Block), target :: this, other
 			type(Block), pointer :: this_ptr, other_ptr
-			character(len = 3) :: operation
+			character(len=3) :: operation
 			allocate(this_ptr)
 			allocate(other_ptr)
+			allocate(output%this_ptr)
+			allocate(output%other_ptr)
 			this_ptr=>this
 			other_ptr=>other
 			output%this_ptr = this_ptr
@@ -55,17 +57,18 @@ module  FTL !we need a queue for the differentiation grpah
 
 		subroutine append_definition(this, first, second, operation)
 			class(queue) :: this
-			type(reference), allocatable, dimension(:) :: queue_cpy
+			type(reference), dimension(:), allocatable :: queue_cpy
 			type(reference) :: item
 			type(Block) :: first, second
 			character(len = 3) :: operation
 			print *, "debug"
-			item =  construct_reference(first, second, operation) ! THE PROBLEM IS HERE!!!
+			item = construct_reference(first, second, operation) 
 			print *, "debug"
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
-				allocate(this%list(0))
+				allocate(this%list(1)) ! THE PROBLEM IS HERE!!!
 			end if
 			print *, "debug"
+			
 			allocate(queue_cpy(size(this%list)+1)) ! we allocate a copy that's larger with 1 element and copy the contents of the origina queue 
 			queue_cpy(1:size(this%list)) = this%list
 			queue_cpy(size(this%list)+1) = item
