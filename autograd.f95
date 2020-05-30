@@ -77,7 +77,7 @@ module  FTL !we need a queue for the differentiation grpah
 			item = construct_reference(first, second, operation) 
 			print *, "debug"
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
-				allocate(this%list(1)) ! THE PROBLEM IS HERE!!!
+				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
 			end if
 			print *, "debug"
 			
@@ -93,9 +93,12 @@ module  FTL !we need a queue for the differentiation grpah
 
 		subroutine print_definition(this)
 			class(queue) :: this
-			real :: n
+			integer :: n, i
 			n = size(this%list)
 			print *, n
+			do i=1, n
+				print *, this%list(i)%this_ptr, this%list(i)%other_ptr, this%list(i)%operation
+			end do
 		end subroutine print_definition
 end module FTL
 
@@ -111,13 +114,11 @@ program main
 
 
 
-
-
-	print *, "debug"
 	a = construct_block(3.0)
 	b = construct_block(4.0)
 	call graf%append(a, b, 'add')
-	! call graf%append(a, b, 'add')
+	call graf%append(a, b, 'add')
+	call graf%print()
 	! call graf%append(a, b, 'add')
 
 	! call graf%print()
