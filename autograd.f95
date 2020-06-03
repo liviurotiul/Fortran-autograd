@@ -61,6 +61,7 @@ module  FTL !we need a queue for the differentiation grpah
 		contains
 			procedure, pass(this) :: append => append_definition
 			procedure, pass(this) :: print => print_definition
+			procedure, pass(this) :: backward => backward_definition
 	end type queue
 
 
@@ -100,6 +101,19 @@ module  FTL !we need a queue for the differentiation grpah
 				print *, this%list(i)%this_ptr, this%list(i)%other_ptr, this%list(i)%operation
 			end do
 		end subroutine print_definition
+
+		subroutine backward_definition(this) 
+			class(queue) :: this
+			integer :: n, i
+			n = size(this%list)
+			!the last one has the gradient of one because is equal to dy/dy
+			this%list(n)%this_ptr%grad = 1.0
+			do i=n-1, 1
+				this%list(i)%this_ptr%grad = this%list(i)%this_ptr%grad + this%list(i+1)%this_ptr%grad
+				this%list(i)%other_ptr%grad = this%list(i)%other_ptr%grad + this%list(i+1)%other_ptr%grad
+			end do
+		end subroutine
+
 end module FTL
 
 
@@ -116,21 +130,10 @@ program main
 
 	a = construct_block(3.0)
 	b = construct_block(4.0)
+	b = construct_block(5.0)
 	call graf%append(a, b, 'add')
 	call graf%append(a, b, 'add')
 	call graf%print()
 	! call graf%append(a, b, 'add')
 
-	! call graf%print()
-	! type(queue) :: q
-	! type(Block) :: a
-	! call q%append(3.0)
-	! call q%append(4.0)
-	! call q%print()
-	! call q%print
-	! type(Block) :: A, B, C
-	! A = construct(30.0)
-	! B = construct(40.0)
-	! C = A%add(B)
-	! print *, C%data
 end program main
