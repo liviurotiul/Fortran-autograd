@@ -4,6 +4,7 @@ module Block_mod
 		real :: data, grad
 		contains
 			procedure, pass(this) :: add => addition_definition
+			procedure, pass(this) :: pass => pass_data
 	end type Block
 	contains
 		function construct_block(variable) result(output)
@@ -20,7 +21,11 @@ module Block_mod
 			this%data = first_o%data + second_o%data
 		end subroutine
 
-
+		subroutine pass_data(this, data_in)
+			class(Block) :: this
+			real :: data_in
+			this%data = data_in
+		end subroutine pass_data
 end module Block_mod
 
 
@@ -138,6 +143,9 @@ program main
 	c = construct_block(0.0)
 
 	call graf%append(a, b, c, 'add')
+
+	call a%pass(3.0)
+	call b%pass(4.0)
 
 	call c%add(a, b)
 	call graf%print()
