@@ -13,11 +13,13 @@ module Block_mod
 			output%grad = 0
 		end function construct_block
 
-		function addition_definition(this, other) result(output)
-			class(Block), intent(in) :: this, other
-			type(Block) :: output
-			output = construct_block(this%data + other%data)
-		end function addition_definition
+
+		subroutine addition_definition(this, first_o, second_o)
+			class(Block) :: this
+			type(Block) :: first_o, second_o
+			this%data = first_o%data + second_o%data
+		end subroutine
+
 
 end module Block_mod
 
@@ -28,23 +30,27 @@ module reference_mod
 	implicit none
 	! the Q contains references to objects taking part in certain operations
 	type, public :: reference
-		type(Block), pointer :: this_ptr, other_ptr
+		type(Block), pointer :: this_ptr, other_ptr, result_ptr
 		character(len=3) :: operation
 	end type reference
 	contains
-		function construct_reference(this, other, operation) result(output)
+		function construct_reference(this, other, result, operation) result(output)
 			type(reference) :: output
-			type(Block), target :: this, other
-			type(Block), pointer :: this_ptr, other_ptr
+			type(Block), target :: this, other, result
+			type(Block), pointer :: this_ptr, other_ptr, result_ptr
 			character(len=3) :: operation
 			allocate(this_ptr)
 			allocate(other_ptr)
+			allocate(result_ptr)
 			allocate(output%this_ptr)
 			allocate(output%other_ptr)
+			allocate(output%result_ptr)
 			this_ptr=>this
 			other_ptr=>other
+			result_ptr=>result
 			output%this_ptr = this_ptr
 			output%other_ptr = other_ptr
+			output%result_ptr = result_ptr
 			output%operation = operation
 		end function
 
@@ -61,21 +67,21 @@ module  FTL !we need a queue for the differentiation grpah
 		contains
 			procedure, pass(this) :: append => append_definition
 			procedure, pass(this) :: print => print_definition
-			procedure, pass(this) :: backward => backward_definition
+			! procedure, pass(this) :: backward => backward_definition
 	end type queue
 
 
 	contains
-		subroutine append_definition(this, first, second, operation)
+		subroutine append_definition(this, first, second, result, operation)
 			class(queue) :: this
 			type(reference), dimension(:), allocatable :: queue_cpy
 			type(reference) :: item
-			type(Block) :: first, second
+			type(Block) :: first, second, result
 			character(len=3) :: operation
 
 
 			print *, "debug"
-			item = construct_reference(first, second, operation) 
+			item = construct_reference(first, second, result, operation) 
 			print *, "debug"
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
@@ -98,8 +104,9 @@ module  FTL !we need a queue for the differentiation grpah
 			n = size(this%list)
 			print *, n
 			do i=1, n
-				print *, this%list(i)%this_ptr, this%list(i)%other_ptr, this%list(i)%operation
+				print *, this%list(i)%this_ptr, this%list(i)%other_ptr, this%list(i)%result_ptr, this%list(i)%operation
 			end do
+			print *, ''
 		end subroutine print_definition
 
 		subroutine backward_definition(this) 
@@ -126,14 +133,14 @@ program main
 	type(queue) :: graf
 	!apparently problem is that i m using the reference type for array elements
 
+	a = construct_block(0.0)
+	b = construct_block(0.0)
+	c = construct_block(0.0)
 
+	call graf%append(a, b, c, 'add')
 
-	a = construct_block(3.0)
-	b = construct_block(4.0)
-	b = construct_block(5.0)
-	call graf%append(a, b, 'add')
-	call graf%append(a, b, 'add')
+	call c%add(a, b)
 	call graf%print()
-	! call graf%append(a, b, 'add')
+	print *, c
 
 end program main
