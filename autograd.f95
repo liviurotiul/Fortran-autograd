@@ -5,13 +5,14 @@ module Block_mod
 		contains
 			procedure, pass(this) :: add => addition_definition
 			procedure, pass(this) :: pass => pass_data
+			procedure, pass(this) :: pass_grad => pass_gradient
 	end type Block
 	contains
 		function construct_block(variable) result(output)
 			type(Block) :: output
 			real :: variable
 			output%data = variable
-			output%grad = 0
+			output%grad = 0.0
 		end function construct_block
 
 
@@ -26,6 +27,12 @@ module Block_mod
 			real :: data_in
 			this%data = data_in
 		end subroutine pass_data
+
+		subroutine pass_gradient(this, grad)
+			class(Block) :: this
+			real :: grad
+			this%grad = grad
+		end subroutine
 end module Block_mod
 
 
@@ -72,7 +79,7 @@ module  FTL !we need a queue for the differentiation grpah
 		contains
 			procedure, pass(this) :: append => append_definition
 			procedure, pass(this) :: print => print_definition
-			! procedure, pass(this) :: backward => backward_definition
+			procedure, pass(this) :: backward => backward_definition
 	end type queue
 
 
@@ -85,13 +92,12 @@ module  FTL !we need a queue for the differentiation grpah
 			character(len=3) :: operation
 
 
-			print *, "debug"
 			item = construct_reference(first, second, result, operation) 
-			print *, "debug"
+
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
 			end if
-			print *, "debug"
+
 			
 			allocate(queue_cpy(size(this%list)+1)) ! we allocate a copy that's larger with 1 element and copy the contents of the origina queue 
 			queue_cpy(1:size(this%list)) = this%list
@@ -119,10 +125,10 @@ module  FTL !we need a queue for the differentiation grpah
 			integer :: n, i
 			n = size(this%list)
 			!the last one has the gradient of one because is equal to dy/dy
-			this%list(n)%this_ptr%grad = 1.0
-			do i=n-1, 1
-				this%list(i)%this_ptr%grad = this%list(i)%this_ptr%grad + this%list(i+1)%this_ptr%grad
-				this%list(i)%other_ptr%grad = this%list(i)%other_ptr%grad + this%list(i+1)%other_ptr%grad
+			call this%list(n)%result_ptr%pass_grad(1.0)
+			do i=n, 1
+				call this%list(i)%this_ptr%pass_grad(this%list(i)%this_ptr%grad + this%list(i)%result_ptr%grad)
+				call this%list(i)%other_ptr%pass_grad(this%list(i)%other_ptr%grad + this%list(i)%other_ptr%grad)
 			end do
 		end subroutine
 
@@ -142,13 +148,13 @@ program main
 	b = construct_block(0.0)
 	c = construct_block(0.0)
 
-	call graf%append(a, b, c, 'add')
+
 
 	call a%pass(3.0)
 	call b%pass(4.0)
-
 	call c%add(a, b)
+	call graf%append(a, b, c, 'add')
+	print *, a ,b, c
+	call graf%backward()
 	call graf%print()
-	print *, c
-
 end program main
