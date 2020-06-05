@@ -115,7 +115,8 @@ module  FTL !we need a queue for the differentiation grpah
 			n = size(this%list)
 			print *, n
 			do i=1, n
-				print *, this%list(i)%this_ptr, this%list(i)%other_ptr, this%list(i)%result_ptr, this%list(i)%operation
+			print *,"_____value_____", "______grad________", "________value______", "_______grad_____","________value_____", "________grad__"
+			print *, this%list(i)%this_ptr, this%list(i)%operation, this%list(i)%other_ptr, "=" ,this%list(i)%result_ptr
 			end do
 			print *, ''
 		end subroutine print_definition
@@ -128,7 +129,7 @@ module  FTL !we need a queue for the differentiation grpah
 			call this%list(n)%result_ptr%pass_grad(1.0)
 			do i=n, 1
 				call this%list(i)%this_ptr%pass_grad(this%list(i)%this_ptr%grad + this%list(i)%result_ptr%grad)
-				call this%list(i)%other_ptr%pass_grad(this%list(i)%other_ptr%grad + this%list(i)%other_ptr%grad)
+				call this%list(i)%other_ptr%pass_grad(this%list(i)%other_ptr%grad + this%list(i)%result_ptr%grad)
 			end do
 		end subroutine
 
