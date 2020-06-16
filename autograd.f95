@@ -49,22 +49,59 @@ module reference_mod
 		function construct_reference(this, other, result, operation) result(output)
 			type(reference) :: output
 			type(Block), target :: this, other, result
-			type(Block), pointer :: this_ptr, other_ptr, result_ptr
 			character(len=3) :: operation
-			allocate(this_ptr)
-			allocate(other_ptr)
-			allocate(result_ptr)
 			allocate(output%this_ptr)
 			allocate(output%other_ptr)
 			allocate(output%result_ptr)
-			this_ptr=>this
-			other_ptr=>other
-			result_ptr=>result
-			output%this_ptr = this_ptr
-			output%other_ptr = other_ptr
-			output%result_ptr = result_ptr
+			output%this_ptr => this
+			output%other_ptr => other
+			output%result_ptr => result
 			output%operation = operation
 		end function
+
+		! function construct_reference() result(output)
+		! 	type(reference) :: output
+		! 	type(Block), target :: this, other, result
+		! 	type(Block), pointer :: this_ptr, other_ptr, result_ptr
+		! 	character(len=3) :: operation
+		! 	operation = "add"
+		! 	this = construct_block(0.0)
+		! 	other = construct_block(0.0)
+		! 	result = construct_block(0.0)
+		! 	allocate(this_ptr)
+		! 	allocate(other_ptr)
+		! 	allocate(result_ptr)
+		! 	allocate(output%this_ptr)
+		! 	allocate(output%other_ptr)
+		! 	allocate(output%result_ptr)
+		! 	this_ptr=>this
+		! 	other_ptr=>other
+		! 	result_ptr=>result
+		! 	output%this_ptr = this_ptr
+		! 	output%other_ptr = other_ptr
+		! 	output%result_ptr = result_ptr
+		! 	output%operation = operation
+		! end function
+
+		! subroutine pass_data_init(this_object, this, other, result, operation)
+		! 	class(reference) :: this_object
+		! 	type(Block), target :: this, other, result
+		! 	type(Block), pointer :: this_ptr, other_ptr, result_ptr
+		! 	character(len=3) :: operation
+		! 	allocate(this_ptr)
+		! 	allocate(other_ptr)
+		! 	allocate(result_ptr)
+		! 	allocate(this_object%this_ptr)
+		! 	allocate(this_object%other_ptr)
+		! 	allocate(this_object%result_ptr)
+		! 	this_ptr=>this
+		! 	other_ptr=>other
+		! 	result_ptr=>result
+		! 	this_object%this_ptr = this_ptr
+		! 	this_object%other_ptr = other_ptr
+		! 	this_object%result_ptr = result_ptr
+		! 	this_object%operation = operation
+		! end subroutine
 
 end module reference_mod
 
@@ -93,7 +130,8 @@ module  FTL !we need a queue for the differentiation grpah
 
 
 			item = construct_reference(first, second, result, operation) 
-
+			item%this_ptr%data = 1000.0
+			print *, item%this_ptr, first
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
 			end if
@@ -113,7 +151,7 @@ module  FTL !we need a queue for the differentiation grpah
 			class(queue) :: this
 			integer :: n, i
 			n = size(this%list)
-			print *, n
+			! print *, n
 			do i=1, n
 			print *,"_____value_____", "______grad________", "________value______", "_______grad_____","________value_____", "________grad__"
 			print *, this%list(i)%this_ptr, this%list(i)%operation, this%list(i)%other_ptr, "=" ,this%list(i)%result_ptr
@@ -123,13 +161,16 @@ module  FTL !we need a queue for the differentiation grpah
 
 		subroutine backward_definition(this) 
 			class(queue) :: this
-			integer :: n, i
+			integer :: n, i, index
 			n = size(this%list)
 			!the last one has the gradient of one because is equal to dy/dy
 			call this%list(n)%result_ptr%pass_grad(1.0)
-			do i=n, 1
-				call this%list(i)%this_ptr%pass_grad(this%list(i)%this_ptr%grad + this%list(i)%result_ptr%grad)
-				call this%list(i)%other_ptr%pass_grad(this%list(i)%other_ptr%grad + this%list(i)%result_ptr%grad)
+			do i=1, n
+				index = n-i+1
+				print *, index
+
+				call this%list(index)%this_ptr%pass_grad(this%list(index)%this_ptr%grad + this%list(index)%result_ptr%grad)
+				call this%list(index)%other_ptr%pass_grad(this%list(index)%other_ptr%grad + this%list(index)%result_ptr%grad)
 			end do
 		end subroutine
 
@@ -141,21 +182,24 @@ program main
 	use FTL
 	use Block_mod
 	implicit none
-	type(Block) :: a, b, c
+	type(Block) :: a, b, c, d, e 
 	type(queue) :: graf
 	!apparently problem is that i m using the reference type for array elements
 
 	a = construct_block(0.0)
 	b = construct_block(0.0)
 	c = construct_block(0.0)
-
-
+	d = construct_block(0.0)
+	e = construct_block(0.0)
 
 	call a%pass(3.0)
 	call b%pass(4.0)
+	call e%pass(3.0)
 	call c%add(a, b)
+	call d%add(c, e)
 	call graf%append(a, b, c, 'add')
-	print *, a ,b, c
+	call graf%append(c, e, d, 'add')
+	print *, a ,b, c, e
 	call graf%backward()
 	call graf%print()
 end program main
