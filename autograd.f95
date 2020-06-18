@@ -4,8 +4,8 @@ module Block_mod
 		real :: data, grad
 		contains
 			procedure, pass(this) :: add => addition_definition
-			procedure, pass(this) :: pass => pass_data
-			procedure, pass(this) :: pass_grad => pass_gradient
+			procedure, pass(this) :: pass_block_data => pass_block_data_definition
+			procedure, pass(this) :: pass_block_grad => pass_block_grad_definition
 	end type Block
 	contains
 		function construct_block(variable) result(output)
@@ -22,13 +22,13 @@ module Block_mod
 			this%data = first_o%data + second_o%data
 		end subroutine
 
-		subroutine pass_data(this, data_in)
+		subroutine pass_block_data_definition(this, data_in)
 			class(Block) :: this
 			real :: data_in
 			this%data = data_in
-		end subroutine pass_data
+		end subroutine pass_block_data_definition
 
-		subroutine pass_gradient(this, grad)
+		subroutine pass_block_grad_definition(this, grad)
 			class(Block) :: this
 			real :: grad
 			this%grad = grad
@@ -59,50 +59,6 @@ module reference_mod
 			output%operation = operation
 		end function
 
-		! function construct_reference() result(output)
-		! 	type(reference) :: output
-		! 	type(Block), target :: this, other, result
-		! 	type(Block), pointer :: this_ptr, other_ptr, result_ptr
-		! 	character(len=3) :: operation
-		! 	operation = "add"
-		! 	this = construct_block(0.0)
-		! 	other = construct_block(0.0)
-		! 	result = construct_block(0.0)
-		! 	allocate(this_ptr)
-		! 	allocate(other_ptr)
-		! 	allocate(result_ptr)
-		! 	allocate(output%this_ptr)
-		! 	allocate(output%other_ptr)
-		! 	allocate(output%result_ptr)
-		! 	this_ptr=>this
-		! 	other_ptr=>other
-		! 	result_ptr=>result
-		! 	output%this_ptr = this_ptr
-		! 	output%other_ptr = other_ptr
-		! 	output%result_ptr = result_ptr
-		! 	output%operation = operation
-		! end function
-
-		! subroutine pass_data_init(this_object, this, other, result, operation)
-		! 	class(reference) :: this_object
-		! 	type(Block), target :: this, other, result
-		! 	type(Block), pointer :: this_ptr, other_ptr, result_ptr
-		! 	character(len=3) :: operation
-		! 	allocate(this_ptr)
-		! 	allocate(other_ptr)
-		! 	allocate(result_ptr)
-		! 	allocate(this_object%this_ptr)
-		! 	allocate(this_object%other_ptr)
-		! 	allocate(this_object%result_ptr)
-		! 	this_ptr=>this
-		! 	other_ptr=>other
-		! 	result_ptr=>result
-		! 	this_object%this_ptr = this_ptr
-		! 	this_object%other_ptr = other_ptr
-		! 	this_object%result_ptr = result_ptr
-		! 	this_object%operation = operation
-		! end subroutine
-
 end module reference_mod
 
 
@@ -130,7 +86,6 @@ module  FTL !we need a queue for the differentiation grpah
 
 
 			item = construct_reference(first, second, result, operation) 
-			item%this_ptr%data = 1000.0
 			print *, item%this_ptr, first
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
@@ -164,13 +119,13 @@ module  FTL !we need a queue for the differentiation grpah
 			integer :: n, i, index
 			n = size(this%list)
 			!the last one has the gradient of one because is equal to dy/dy
-			call this%list(n)%result_ptr%pass_grad(1.0)
+			call this%list(n)%result_ptr%pass_block_grad(1.0)
 			do i=1, n
 				index = n-i+1
 				print *, index
 
-				call this%list(index)%this_ptr%pass_grad(this%list(index)%this_ptr%grad + this%list(index)%result_ptr%grad)
-				call this%list(index)%other_ptr%pass_grad(this%list(index)%other_ptr%grad + this%list(index)%result_ptr%grad)
+				call this%list(index)%this_ptr%pass_block_grad(this%list(index)%this_ptr%grad + this%list(index)%result_ptr%grad)
+				call this%list(index)%other_ptr%pass_block_grad(this%list(index)%other_ptr%grad + this%list(index)%result_ptr%grad)
 			end do
 		end subroutine
 
@@ -192,9 +147,9 @@ program main
 	d = construct_block(0.0)
 	e = construct_block(0.0)
 
-	call a%pass(3.0)
-	call b%pass(4.0)
-	call e%pass(3.0)
+	call a%pass_block_data(3.0)
+	call b%pass_block_data(4.0)
+	call e%pass_block_data(3.0)
 	call c%add(a, b)
 	call d%add(c, e)
 	call graf%append(a, b, c, 'add')
