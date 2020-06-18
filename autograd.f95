@@ -16,10 +16,10 @@ module Block_mod
 		end function construct_block
 
 
-		subroutine addition_definition(this, first_o, second_o)
+		subroutine addition_definition(this, operand1, operand2)
 			class(Block) :: this
-			type(Block) :: first_o, second_o
-			this%data = first_o%data + second_o%data
+			type(Block) :: operand1, operand2
+			this%data = operand1%data + operand2%data
 		end subroutine
 
 		subroutine pass_block_data_definition(this, data_in)
@@ -42,19 +42,19 @@ module reference_mod
 	implicit none
 	! the Q contains references to objects taking part in certain operations
 	type, public :: reference
-		type(Block), pointer :: this_ptr, other_ptr, result_ptr
+		type(Block), pointer :: operand1_ptr, operand2_ptr, result_ptr
 		character(len=3) :: operation
 	end type reference
 	contains
-		function construct_reference(this, other, result, operation) result(output)
+		function construct_reference(operand1, operand2, result, operation) result(output)
 			type(reference) :: output
-			type(Block), target :: this, other, result
+			type(Block), target :: operand1, operand2, result
 			character(len=3) :: operation
-			allocate(output%this_ptr)
-			allocate(output%other_ptr)
+			allocate(output%operand1_ptr)
+			allocate(output%operand2_ptr)
 			allocate(output%result_ptr)
-			output%this_ptr => this
-			output%other_ptr => other
+			output%operand1_ptr => operand1
+			output%operand2_ptr => operand2
 			output%result_ptr => result
 			output%operation = operation
 		end function
@@ -77,16 +77,16 @@ module  FTL !we need a queue for the differentiation grpah
 
 
 	contains
-		subroutine append_definition(this, first, second, result, operation)
+		subroutine append_definition(this, operand1, operand2, result, operation)
 			class(queue) :: this
 			type(reference), dimension(:), allocatable :: queue_cpy
 			type(reference) :: item
-			type(Block) :: first, second, result
+			type(Block) :: operand1, operand2, result
 			character(len=3) :: operation
 
 
-			item = construct_reference(first, second, result, operation) 
-			print *, item%this_ptr, first
+			item = construct_reference(operand1, operand2, result, operation) 
+
 			if (.not. allocated(this%list)) then ! if the Q is empty we create it
 				allocate(this%list(0)) ! THE PROBLEM IS HERE!!!
 			end if
@@ -109,7 +109,7 @@ module  FTL !we need a queue for the differentiation grpah
 			! print *, n
 			do i=1, n
 			print *,"_____value_____", "______grad________", "________value______", "_______grad_____","________value_____", "________grad__"
-			print *, this%list(i)%this_ptr, this%list(i)%operation, this%list(i)%other_ptr, "=" ,this%list(i)%result_ptr
+			print *, this%list(i)%operand1_ptr, this%list(i)%operation, this%list(i)%operand2_ptr, "=" ,this%list(i)%result_ptr
 			end do
 			print *, ''
 		end subroutine print_definition
@@ -124,8 +124,8 @@ module  FTL !we need a queue for the differentiation grpah
 				index = n-i+1
 				print *, index
 
-				call this%list(index)%this_ptr%pass_block_grad(this%list(index)%this_ptr%grad + this%list(index)%result_ptr%grad)
-				call this%list(index)%other_ptr%pass_block_grad(this%list(index)%other_ptr%grad + this%list(index)%result_ptr%grad)
+				call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
+				call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + this%list(index)%result_ptr%grad)
 			end do
 		end subroutine
 
