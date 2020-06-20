@@ -6,21 +6,30 @@ module Block_mod
 			procedure, pass(this) :: add => addition_definition
 			procedure, pass(this) :: pass_block_data => pass_block_data_definition
 			procedure, pass(this) :: pass_block_grad => pass_block_grad_definition
+			procedure, pass(this) :: subtract => substraction_definition
 	end type Block
 	contains
+		! constructor__________________________________________
 		function construct_block(variable) result(output)
 			type(Block) :: output
 			real :: variable
 			output%data = variable
 			output%grad = 0.0
 		end function construct_block
-
-
+		
+		! opperations __________________________________________
 		subroutine addition_definition(this, operand1, operand2)
 			class(Block) :: this
 			type(Block) :: operand1, operand2
 			this%data = operand1%data + operand2%data
 		end subroutine
+
+		subroutine substraction_definition(this, operand1, operand2)
+			class(Block) :: this
+			type(Block) :: operand1, operand2
+			this%data = operand1%data - operand2%data
+		end subroutine
+
 
 		subroutine pass_block_data_definition(this, data_in)
 			class(Block) :: this
@@ -123,9 +132,13 @@ module  FTL !we need a queue for the differentiation grpah
 			do i=1, n
 				index = n-i+1
 				print *, index
-
-				call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
-				call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + this%list(index)%result_ptr%grad)
+				if (this%list(index)%operation == 'add') then
+					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
+					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + this%list(index)%result_ptr%grad)
+				else if (this%list(index)%operation == 'sub') then
+					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
+					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad - this%list(index)%result_ptr%grad)
+				end if
 			end do
 		end subroutine
 
@@ -151,9 +164,9 @@ program main
 	call b%pass_block_data(4.0)
 	call e%pass_block_data(3.0)
 	call c%add(a, b)
-	call d%add(c, e)
+	call d%subtract(e, c)
 	call graf%append(a, b, c, 'add')
-	call graf%append(c, e, d, 'add')
+	call graf%append(e, c, d, 'sub')
 	print *, a ,b, c, e
 	call graf%backward()
 	call graf%print()
