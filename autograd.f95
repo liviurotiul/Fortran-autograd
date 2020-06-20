@@ -3,10 +3,11 @@ module Block_mod
 	type, public :: Block
 		real :: data, grad
 		contains
-			procedure, pass(this) :: add => addition_definition
 			procedure, pass(this) :: pass_block_data => pass_block_data_definition
 			procedure, pass(this) :: pass_block_grad => pass_block_grad_definition
 			procedure, pass(this) :: subtract => substraction_definition
+			procedure, pass(this) :: add => addition_definition
+			procedure, pass(this) :: multiply => multiply_definition
 	end type Block
 	contains
 		! constructor__________________________________________
@@ -30,12 +31,19 @@ module Block_mod
 			this%data = operand1%data - operand2%data
 		end subroutine
 
+		subroutine multiply_definition(this, operand1, operand2)
+			class(Block) :: this
+			type(Block) :: operand1, operand2
+			this%data = operand1%data * operand2%data
+		end subroutine
 
 		subroutine pass_block_data_definition(this, data_in)
 			class(Block) :: this
 			real :: data_in
 			this%data = data_in
 		end subroutine pass_block_data_definition
+
+		
 
 		subroutine pass_block_grad_definition(this, grad)
 			class(Block) :: this
@@ -138,6 +146,9 @@ module  FTL !we need a queue for the differentiation grpah
 				else if (this%list(index)%operation == 'sub') then
 					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
 					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad - this%list(index)%result_ptr%grad)
+				else if (this%list(index)%operation == 'mul') then
+					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad * this%list(index)%result_ptr%grad)
+					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad * this%list(index)%result_ptr%grad)
 				end if
 			end do
 		end subroutine
