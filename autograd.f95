@@ -8,7 +8,8 @@ module Block_mod
 			procedure, pass(this) :: subtract => substraction_definition
 			procedure, pass(this) :: add => addition_definition
 			procedure, pass(this) :: multiply => multiply_definition
-	end type Block
+			procedure, pass(this) :: divide => divide_definition
+			end type Block
 	contains
 		! constructor__________________________________________
 		function construct_block(variable) result(output)
@@ -35,6 +36,12 @@ module Block_mod
 			class(Block) :: this
 			type(Block) :: operand1, operand2
 			this%data = operand1%data * operand2%data
+		end subroutine
+
+		subroutine divide_definition(this, operand1, operand2)
+			class(Block) :: this
+			type(Block) :: operand1, operand2
+			this%data = operand1%data / operand2%data
 		end subroutine
 
 		subroutine pass_block_data_definition(this, data_in)
@@ -143,12 +150,28 @@ module  FTL !we need a queue for the differentiation grpah
 				if (this%list(index)%operation == 'add') then
 					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
 					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + this%list(index)%result_ptr%grad)
+
 				else if (this%list(index)%operation == 'sub') then
 					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + this%list(index)%result_ptr%grad)
 					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad - this%list(index)%result_ptr%grad)
+
 				else if (this%list(index)%operation == 'mul') then
-					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad * this%list(index)%result_ptr%grad)
-					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad * this%list(index)%result_ptr%grad)
+					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + &
+																		(this%list(index)%result_ptr%grad * &
+																		this%list(index)%operand2_ptr%data))
+
+					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + &
+																		(this%list(index)%result_ptr%grad * &
+																		this%list(index)%operand1_ptr%data))
+
+				else if (this%list(index)%operation == 'div') then
+					call this%list(index)%operand1_ptr%pass_block_grad(this%list(index)%operand1_ptr%grad + &
+																		this%list(index)%result_ptr%grad / &
+																		this%list(index)%operand2_ptr%data )
+
+					call this%list(index)%operand2_ptr%pass_block_grad(this%list(index)%operand2_ptr%grad + &
+																		(this%list(index)%result_ptr%grad / &
+																		(-1)*this%list(index)%operand1_ptr%data))
 				end if
 			end do
 		end subroutine
@@ -161,24 +184,31 @@ program main
 	use FTL
 	use Block_mod
 	implicit none
-	type(Block) :: a, b, c, d, e 
+	type(Block) :: a, b, c, d, e, f, g
 	type(queue) :: graf
-	!apparently problem is that i m using the reference type for array elements
+
 
 	a = construct_block(0.0)
 	b = construct_block(0.0)
 	c = construct_block(0.0)
 	d = construct_block(0.0)
 	e = construct_block(0.0)
+	f = construct_block(0.0)
+	g = construct_block(0.0)
 
 	call a%pass_block_data(3.0)
 	call b%pass_block_data(4.0)
-	call e%pass_block_data(3.0)
-	call c%add(a, b)
-	call d%subtract(e, c)
-	call graf%append(a, b, c, 'add')
-	call graf%append(e, c, d, 'sub')
-	print *, a ,b, c, e
+	call c%pass_block_data(5.0)
+	call d%pass_block_data(6.0)
+
+	call e%multiply(a, b)
+	call f%divide(c, d)
+	call g%add(e, f)
+
+	call graf%append(a, b, e, 'mul')
+	call graf%append(c, d, f, 'div')
+	call graf%append(e, f, g, 'add')
+
 	call graf%backward()
 	call graf%print()
 end program main
